@@ -1,9 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <istream>
 #include <map>
 #include <utility>
 #include <string>
+#include <cstring>
 
 using namespace std;
 
@@ -12,18 +14,18 @@ class CacheManager
 {
 private:
     size_t capacity;
-    map<string, pair<T, int>> cache_data; // (id, (object, MRU))
+    map<string, pair<T, int>> cache_data; // (key, (object, MRU))
     bool write_file(string, T);
     int get_maximum_MRU();
     bool exists_in_cache(string key);
+    void remove_least_recently_used();
 
 public:
     CacheManager(int); // recibe la capacidad en el int
     ~CacheManager();
 
     void insert(string id, T object);
-    // T get(string id);
-    int get(string id);
+    T get(string id);
     void show_cache();
 };
 
@@ -33,11 +35,31 @@ CacheManager<T>::CacheManager(int capacity)
     this->capacity = capacity;
 
     // get class name T and create a file with this name
-    fstream file(T::class_name + ".txt");
+    string filename = T::class_name + ".txt";
+    fstream file(filename);
+    file.open(filename, std::ios_base::app);
+    file.close();
 }
 
 template <class T>
 CacheManager<T>::~CacheManager() {}
+
+template <class T>
+void CacheManager<T>::remove_least_recently_used()
+{
+    // Find the least recently used object
+    auto it = cache_data.begin();
+    for (auto i = cache_data.begin(); i != cache_data.end(); i++)
+    {
+        if (i->second.second < it->second.second)
+        {
+            it = i;
+        }
+    }
+
+    // Remove the least recently used object from the cache
+    cache_data.erase(it);
+}
 
 template <class T>
 bool CacheManager<T>::write_file(string key, T object)
@@ -108,7 +130,6 @@ bool CacheManager<T>::write_file(string key, T object)
 template <class T>
 bool CacheManager<T>::exists_in_cache(string key)
 {
-    // Check if the key already exists in the cache
     bool exists = cache_data.find(key) != cache_data.end();
     return exists;
 }
@@ -145,115 +166,59 @@ void CacheManager<T>::insert(string key, T object)
     }
 
     // key doesn't exist
-
-    // if the cache is full, remove the least recently used object
     if (cache_data.size() >= capacity)
     {
-        // Find the least recently used object
-        auto it = cache_data.begin();
-        for (auto iterator = cache_data.begin(); iterator != cache_data.end(); iterator++)
-        {
-            if (iterator->second.second < it->second.second)
-            {
-                it = iterator;
-            }
-        }
-        // Remove the least recently used object from the cache
-        cache_data.erase(it);
+        this->remove_least_recently_used();
     }
 
     int maximum_MRU = get_maximum_MRU() + 1;
-    cache_data.emplace(key, make_pair(move(object), maximum_MRU)); // insert to cache
+
+    // insert to cache
+    cache_data.emplace(key, make_pair(move(object), maximum_MRU));
 
     write_file(key, object);
 }
 
 template <class T>
-int CacheManager<T>::get(string key)
+T CacheManager<T>::get(string key)
 {
-    /**
-    Al realizar un get(), si no se encuentra en la cache en RAM se lo buscará en
-    el archivo. Si se lo encuentra, se retorna y guarda en la cache de RAM, si
-    esta está completa, se quitará el menos usado (LRU) más bajo.
+    // Check if the key exists in the cache
+    if (cache_data.find(key) != cache_data.end())
+    {
+        // key found in cache, return the value
+        return cache_data[key].first;
+    }
 
-    En el archivo no debe guardarse el MRU ya que este es válido para la cache
-    de RAM. Ejemplo de lo que se ha dicho anteriormente. Si al buscar la clave, no
-    está en RAM, pero se encuentra en el archivo, este Object se incorpora a la cache
-    RAM y el MRU se seteará con el valor más alto, o sea, si el MRU existente es
-    10, el nuevo par incrementará con MRU 11.
-    */
+    // key not found in cache, search in the file
+    ifstream file(T::class_name + ".txt");
+    string line;
+    while (std::getline(file, line))
+    {
+        istringstream iss(line);
+        string file_key;
+        T file_value;
+        if (iss >> file_key >> file_value)
+        {
+            // Check if the key matches
+            if (file_key == key)
+            {
+                if (cache_data.size() > capacity)
+                {
+                    this->remove_least_recently_used();
+                }
 
-    // Check if the id exists in the cache
-    // if (cache_data.find(id) != cache_data.end())
-    // {
-    //     // id found in cache, return the value
-    //     return cache_data[id].first;
-    // }
+                // key found in the file, add it to the cache
+                int maximum_MRU = get_maximum_MRU() + 1;
+                cache_data[key] = make_pair(file_value, maximum_MRU);
+                file.close();
+                return file_value;
+            }
+        }
+    }
+    file.close();
 
-    // id not found in cache, search in the file
-    // ifstream file("cache.txt");
-    // string line;
-    // while (std::getline(file, line))
-    // {
-    //     // Parse the line to extract the id and value
-    //     istringstream iss(line);
-    //     string fileKey;
-    //     T fileValue;
-    //     if (iss >> fileKey >> fileValue)
-    //     {
-    //         // Check if the id matches
-    //         if (fileKey == id)
-    //         {
-    //             // Id found in the file, add it to the cache
-    //             cache_data[id] = make_pair(fileValue, "");
-    //             file.close();
-    //             return fileValue;
-    //         }
-    //     }
-    // }
-    // file.close();
-
-    // // If the id is found in the file, add it to the cache
-    // // TODO: Add the id-objet pair to the cache
-    // // Add the id-value pair to the cache
-    // cache_data[id] = std::make_pair(object, "MRU");
-
-    // // Implement LRU eviction logic if the cache is full
-    // if (cache_data.size() > capacity)
-    // {
-    //     // Find the least recently used id
-    //     auto it = cache_data.begin();
-    //     for (auto i = cache_data.begin(); i != cache_data.end(); i++)
-    //     {
-    //         if (i->second.second < it->second.second)
-    //         {
-    //             it = i;
-    //         }
-    //     }
-    //     // Remove the least recently used id from the cache
-    //     cache_data.erase(it);
-    // }
-
-    // // TODO: Implement LRU eviction logic if the cache is full
-    // // Implement LRU eviction logic if the cache is full
-    // if (cache_data.size() > capacity)
-    // {
-    //     // Find the least recently used id
-    //     auto it = cache_data.begin();
-    //     for (auto i = cache_data.begin(); i != cache_data.end(); i++)
-    //     {
-    //         if (i->second.second < it->second.second)
-    //         {
-    //             it = i;
-    //         }
-    //     }
-    //     // Remove the least recently used id from the cache
-    //     cache_data.erase(it);
-    // }
-
-    // // Return the value associated with the id
-    // return cache_data[id].first;
-    return 0;
+    // Return the value associated with the id
+    return cache_data[key].first;
 }
 
 template <class T>
@@ -262,6 +227,8 @@ void CacheManager<T>::show_cache()
     // Muestra el contenido de la cache
     for (auto map_data = cache_data.begin(); map_data != cache_data.end(); map_data++)
     {
-        std::cout << "Key: " << map_data->first << ", Value: (Object: " << map_data->second.first.print() << ", MRU: " << map_data->second.second << ")" << std::endl;
+        cout << "Key: " << map_data->first << ", Value: (Object: ";
+        map_data->second.first.print(); // Call print separately
+        cout << ", MRU: " << map_data->second.second << ")" << std::endl;
     }
 }
