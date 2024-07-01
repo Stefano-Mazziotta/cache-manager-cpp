@@ -5,7 +5,6 @@
 #include <map>
 #include <utility>
 #include <string>
-#include <cstring>
 
 using namespace std;
 
@@ -202,7 +201,7 @@ T CacheManager<T>::get(string key)
             // Check if the key matches
             if (file_key == key)
             {
-                if (cache_data.size() > capacity)
+                if (cache_data.size() >= capacity)
                 {
                     this->remove_least_recently_used();
                 }
