@@ -29,7 +29,7 @@ public:
 
     friend std::istream &operator>>(std::istream &is, Student &student)
     {
-        // Assuming id is an int, name is a string that doesn't contain spaces, and age is an int
+        // Assuming id is an int, name is a string, and age is an int
         std::string name;
         is >> student.id >> student.name >> student.age;
         return is;
