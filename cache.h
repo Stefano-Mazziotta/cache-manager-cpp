@@ -182,7 +182,7 @@ template <class T>
 T CacheManager<T>::get(string key)
 {
     // Check if the key exists in the cache
-    if (cache_data.find(key) != cache_data.end())
+    if (this->exists_in_cache(key))
     {
         // key found in cache, return the value
         return cache_data[key].first;
