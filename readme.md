@@ -1,42 +1,56 @@
-# University project
+# Cache Manager in C++
+## University project
 
-Se implementará un Manejador de cache generico. El sistema guardará un pair compuesto por clave y valor, ambos en RAM y en disco (files).
+Cache management using object oriented programming in c++.
+- Use map and pair structures as data representations to save in RAM and files
+- Key algorithms to get values from cache
+- Logic to insert and retrieve data from multiple cache or file structures
+- Limit cache capacity
+- Implementing the cache using Most Recently Used (MRU) and Least Recently Used (LRU) algorithms
 
-Dada una clave, el cache manager accede al valor. Si el valor existe en la memoria es retornado. En caso que no exista en memoria, entonces el cache deberá buscar la clave en el archivo y retornar el pair si es encontrado.
 
-El cache también debe implementar un tamaño límite de capacidad, lo que significa una restricción sobre cuántos elementos pueden existir a la vez en la memoria.
+# 1. Specifications
+## 1.1. Class CacheManager
 
-Una vez que se ha alcanzado el límite, el menos utilizado recientemente (LRU) debe eliminarse de la memoria para ingresar al nuevo. En el momento de la inserción, todo nuevo par <key, valor> debe guardarse tanto en la memoria como en el archivo.
+Public functions required in your class:
 
-## Especificaciones
+- `void insert(string key, T Obj)`: If the key exists, update the object in both cache and file. Otherwise, write the object to the filesystem and cache. Update the object's MRU to be the highest.
 
-### 1.1. Class CacheManager
+- `T get(string key)`: If the object exists in either cache or file, return it and update the MRU. If the key does not exist in both primary system and filesystem, notify the program.
 
-Las funciones públicas que deben existir en su clase son:
+- `CacheManager(string capacity)`: Initialize the cache capacity. 
 
-- `void insert(string key, T Obj)`: Si existe, actualizará al objeto tanto en cache como en el archivo. De lo contrario, escribirá el objeto en el sistema de archivos y la caché. Se actualizará el MRU del Obj para que sea el mayor.
+> [!IMPORTANT]
+> - Any call using a key (insert or get) will update the key-value pair to be the Most Recently Used (MRU).
+> - The object Obj must be of type T created in the main and passed to the functions. 
+> - The constructor should only accept the cache capacity. 
 
-- `T get(string key)`: Si el objeto existe, sea en la caché o en el archivo, lo retorna y actualiza el MRU. Si la clave no existe tanto en el sistema principal como en el sistema de archivos, el programa debe informarlo.
 
-- `CacheManager(string capacity)`: Debe inicializar la capacidad de la caché. IMPORTANTE: cualquier llamada que utiliza una clave (insertar u obtener) actualizará el par <clave, <obj, valor>> para ser el Mayor Recientemente Usado.
+## 1.2. T Object
 
-La clave (key) siempre será un string. El Obj debe ser un objeto de tipo T creado en el main y pasado a las funciones. Se detallarán más adelante las especificaciones de dicho objeto. El constructor solo debe aceptar la capacidad del cache. Puede y debe agregar toda función que crea necesaria para el funcionamiento y la operatividad de la caché sea en RAM o en el archivo.
+- Each implemented class should have a static member called `class_name`, initialized in the main.
+- Each class should have a `print()` function or an appropriate operator overload.
+- No limit on the number of member data in the classes.
 
-### 1.2. T Object
+## 1.3. Files
+- Each call `to insert()`, the insertion of T Obj will be performed in both cache and file. 
+    - If the key already exists, update the Obj.
 
-El tipo T debe ser un tipo de una clase que se implemente en el main. En los archivos adjuntos está el ejemplo de main. Se deberá tener en cuenta:
+- File names will be created as `class_name.txt`
+- When performing a get(): 
+    - If the object is not found in the RAM cache it will be searched for in the file.  
+    - If found, it is returned and stored in the RAM cache. 
+    - If the cache is full, the least recently used (LRU) object will be removed.
 
-- Los miembros deben ser tipos primitivos (string, int, float, double, etc.). No deben usarse datos complejos ni punteros.
-- Cada clase que se implemente debe tener un static con el nombre de la clase. Debe ser inicializado en el main.
-- Por cada clase que se implemente debe tenerse una función `print()` o la respectiva sobrecarga del operador.
-- No hay límites de los datos miembros de las clases.
+- The MRU should not be stored in the file as it is only valid for the RAM cache. 
 
-### 1.3. Files
+> [!Tip]
+> Example: if the key is not in RAM but found in the file, the object is incorporated into the RAM cache, and the MRU is set to the highest value. If the existing MRU is 10, the new pair will increment to MRU 11.
 
-Cada llamada a `insert()`, la inserción del T Obj se realizará en la caché y en el archivo. Si ya existía la clave, actualiza el Obj.
 
-Los nombres de los archivos serán arbitrarios y los podrán elegir según deseen.
-
-Al realizar un `get()`, si no se encuentra en la caché en RAM se lo buscará en el archivo. Si se lo encuentra, se retorna y guarda en la caché de RAM. Si esta está completa, se quitará el menos usado (LRU) más bajo.
-
-En el archivo no debe guardarse el MRU ya que este es válido para la caché de RAM. Ejemplo de lo que se ha dicho anteriormente: si al buscar la clave, no está en RAM, pero se encuentra en el archivo, este Obj se incorpora a la caché RAM y el MRU se seteará con el valor más alto, es decir, si el MRU existente es 10, el nuevo par incrementará con MRU 11.
+# 2. How to run?
+1. Compile:
+```
+compile g++ -Wall -std=c++11 main.cpp -o main
+```
+2. Execute `./main` in terminal.
