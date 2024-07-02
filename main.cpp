@@ -55,8 +55,8 @@ int main()
 
     cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
 
-    Student return_obj = student_cache.get("1"); // not in cache but in filesystem
-    return_obj.print();
+    Student student = student_cache.get("1"); // not in cache but in filesystem
+    student.print();
 
     cout << "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" << endl;
 
